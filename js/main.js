@@ -2,31 +2,32 @@
 const API_BASE = "https://pokeapi.co/api/v2";
 const LIMIT = 50; // Número de Pokémon a mostrar
 
+let allPokemon = [];
+
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
-	try {
-		// 1. Obtiene la lista base de Pokémon (nombre + URL de detalle)
-		const listResponse = await fetch(`${API_BASE}/pokemon?limit=${LIMIT}`);
-		const listData = await listResponse.json();
+        try {
+                await loadTypes();
 
-		// 2. Para cada Pokémon, solicita sus datos detallados en paralelo
-		const detailPromises = listData.results.map((p) =>
-			fetch(p.url).then((r) => r.json())
-		);
-		const pokemonDetails = await Promise.all(detailPromises);
+                // 1. Obtiene la lista base de Pokémon (nombre + URL de detalle)
+                const listResponse = await fetch(`${API_BASE}/pokemon?limit=${LIMIT}`);
+                const listData = await listResponse.json();
 
-		// 3. Crea las tarjetas y añádelas al DOM
-		const pokedex = document.getElementById("pokedex");
-		pokemonDetails.forEach((pokemon) =>
-			pokedex.appendChild(createPokemonCard(pokemon))
-		);
-	} catch (err) {
-		console.error(err);
-		document.getElementById(
-			"pokedex"
-		).innerHTML = `<p class="text-danger">Error al cargar los datos de la PokéAPI.</p>`;
-	}
+                // 2. Para cada Pokémon, solicita sus datos detallados en paralelo
+                const detailPromises = listData.results.map((p) =>
+                        fetch(p.url).then((r) => r.json())
+                );
+                allPokemon = await Promise.all(detailPromises);
+
+                // 3. Renderiza las tarjetas
+                renderPokemon(allPokemon);
+        } catch (err) {
+                console.error(err);
+                document.getElementById(
+                        "pokedex"
+                ).innerHTML = `<p class="text-danger">Error al cargar los datos de la PokéAPI.</p>`;
+        }
 }
 
 // ========= Helpers =========
@@ -63,9 +64,45 @@ function createPokemonCard(pokemon) {
         </div>
       `;
 
-	return col;
+        return col;
+}
+
+function renderPokemon(list) {
+        const pokedex = document.getElementById("pokedex");
+        pokedex.innerHTML = "";
+        list.forEach((pokemon) => pokedex.appendChild(createPokemonCard(pokemon)));
+}
+
+async function loadTypes() {
+        const select = document.getElementById("typeFilter");
+        if (!select) return;
+
+        try {
+                const res = await fetch(`${API_BASE}/type`);
+                const data = await res.json();
+                data.results.forEach((type) => {
+                        const option = document.createElement("option");
+                        option.value = type.name;
+                        option.textContent = capitalize(type.name);
+                        select.appendChild(option);
+                });
+
+                select.addEventListener("change", () => {
+                        const selected = select.value;
+                        if (selected === "all") {
+                                renderPokemon(allPokemon);
+                        } else {
+                                const filtered = allPokemon.filter((p) =>
+                                        p.types.some((t) => t.type.name === selected)
+                                );
+                                renderPokemon(filtered);
+                        }
+                });
+        } catch (err) {
+                console.error("Error al cargar tipos", err);
+        }
 }
 
 function capitalize(str) {
-	return str.charAt(0).toUpperCase() + str.slice(1);
+        return str.charAt(0).toUpperCase() + str.slice(1);
 }
