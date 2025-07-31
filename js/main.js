@@ -3,6 +3,8 @@ const API_BASE = "https://pokeapi.co/api/v2";
 const LIMIT = 50; // Número de Pokémon a mostrar
 
 let allPokemon = [];
+let displayedPokemon = [];
+
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -22,6 +24,12 @@ async function init() {
 
                 // 3. Renderiza las tarjetas
                 renderPokemon(allPokemon);
+
+                const btn = document.getElementById("downloadPdfBtn");
+                if (btn) {
+                        btn.addEventListener("click", downloadPDF);
+                }
+
         } catch (err) {
                 console.error(err);
                 document.getElementById(
@@ -71,6 +79,7 @@ function renderPokemon(list) {
         const pokedex = document.getElementById("pokedex");
         pokedex.innerHTML = "";
         list.forEach((pokemon) => pokedex.appendChild(createPokemonCard(pokemon)));
+        displayedPokemon = list;
 }
 
 async function loadTypes() {
@@ -105,4 +114,30 @@ async function loadTypes() {
 
 function capitalize(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function downloadPDF() {
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF) {
+                console.error("jsPDF no cargado");
+                return;
+        }
+
+        const doc = new jsPDF();
+        let y = 10;
+
+        displayedPokemon.forEach((p, idx) => {
+                const line = `${capitalize(p.name)} (#${p.id.toString().padStart(3, "0")}) - ${p.types
+                        .map((t) => capitalize(t.type.name))
+                        .join(", ")}`;
+
+                if (y > 280) {
+                        doc.addPage();
+                        y = 10;
+                }
+                doc.text(line, 10, y);
+                y += 10;
+        });
+
+        doc.save("pokemon.pdf");
 }
