@@ -5,6 +5,7 @@ const LIMIT = 50; // Número de Pokémon a mostrar
 let allPokemon = [];
 let displayedPokemon = [];
 
+
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
@@ -28,6 +29,7 @@ async function init() {
                 if (btn) {
                         btn.addEventListener("click", downloadPDF);
                 }
+
         } catch (err) {
                 console.error(err);
                 document.getElementById(
